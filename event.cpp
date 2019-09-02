@@ -7,9 +7,8 @@
 
 #include "event.h"
 
-#define MOUSE "/dev/input/event3"
-#define KEYBOARD "/dev/input/event4"
-
+int fd_mouse = 0;
+int fd_key = 0;
 event* event::instance = NULL;
 
 event::event()
@@ -20,6 +19,53 @@ event::event()
 	m_dmouse_x = 0;
 	m_dmouse_y = 0;
 	m_bmouse = 0;
+}
+
+int event::openInput(char* dev)
+{
+	FILE *fd;
+	int i = 0;
+	int count = 0;
+	char name[50];
+	do
+	{
+		sprintf(name,"/sys/class/input/event%d/device/name",i);
+		fd = fopen(name, "r");
+		if (fd != NULL)
+		{
+			fgets(name,50,fd);
+			char* p = strstr(name,dev);
+			count = 0;
+			if (p != NULL) return i;
+		}
+		else
+		{
+			count++;
+		}
+		i++;
+	}while(count < 3);
+	return 0;
+}
+
+void checkInput(int num)
+{
+
+	event* mouse = event::getInstance();
+	int mouseNum = mouse->openInput("Mouse");
+	if (0 == mouseNum) printf("mouse is not be used\n");
+	int keyboardNum = mouse->openInput("Keyboard");
+	if (0 == keyboardNum) printf("keyboard is not be used\n");
+
+	char mouseLocation[30];
+	char keyboardLocation[30];
+
+	sprintf(mouseLocation,"/dev/input/event%d",mouseNum);
+	sprintf(keyboardLocation,"/dev/input/event%d",keyboardNum);
+
+	fd_mouse = open(mouseLocation, O_RDONLY);
+	fd_key = open(keyboardLocation,O_RDONLY);
+
+	alarm(5);
 }
 
 void event::getKeyboard(int num)
@@ -344,19 +390,34 @@ void event::getKeyboard(int num)
 
 void event::captureMouse()
 {
-	int fd_mouse,fd_key,retval;
+	int retval;
 	struct input_event buf_mouse;
 	struct input_event buf_key;
 	fd_set readfds;
 	struct timeval tv;
 
-	fd_mouse = open(MOUSE, O_RDONLY);
-	fd_key = open(KEYBOARD,O_RDONLY);
+	int mouseNum = openInput("Mouse");
+	if (0 == mouseNum) printf("mouse is not be used\n");
+	int keyboardNum = openInput("Keyboard");
+	if (0 == keyboardNum) printf("keyboard is not be used\n");
+
+	char mouseLocation[30];
+	char keyboardLocation[30];
+
+	sprintf(mouseLocation,"/dev/input/event%d",mouseNum);
+	sprintf(keyboardLocation,"/dev/input/event%d",keyboardNum);
+
+
+	fd_mouse = open(mouseLocation, O_RDONLY);
+	fd_key = open(keyboardLocation,O_RDONLY);
+
+
+	//fd_mouse = open(MOUSE, O_RDONLY);
+	//fd_key = open(KEYBOARD,O_RDONLY);
 
 	IPC* ipc = IPC::getInstance();
 
 	int par[100] ={0};
-
 	if(fd_mouse < 0 || fd_key < 0)
 	{
 		printf("open failed\n");
@@ -366,6 +427,9 @@ void event::captureMouse()
 	{
 		printf("open successful\n");
 	}
+
+	signal(SIGALRM, checkInput);
+	alarm(5);
 	while(1)
 	{
 		tv.tv_sec = 5;
