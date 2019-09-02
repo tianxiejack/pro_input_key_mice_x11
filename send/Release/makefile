@@ -51,10 +51,10 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: output_nsight
+all: send
 
 # Tool invocations
-output_nsight: $(OBJS) $(USER_OBJS)
+send: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: NVCC Linker'
 	/usr/local/cuda-9.0/bin/nvcc --cudart static --relocatable-device-code=false -gencode arch=compute_30,code=compute_30 -gencode arch=compute_50,code=compute_50 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_50,code=sm_50 -link -o  "output_nsight" $(OBJS) $(USER_OBJS) $(LIBS)
