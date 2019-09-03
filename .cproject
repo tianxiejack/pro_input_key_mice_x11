@@ -32,7 +32,7 @@
 								<inputType id="nvcc.compiler.input.c.516395001" superClass="nvcc.compiler.input.c"/>
 							</tool>
 							<tool id="nvcc.linker.base.113651590" name="NVCC Linker" superClass="nvcc.linker.base">
-								<option id="nvcc.linker.option.libs.1705995947" superClass="nvcc.linker.option.libs" valueType="libs">
+								<option id="nvcc.linker.option.libs.1705995947" name="Libraries (-l)" superClass="nvcc.linker.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="ipc_c"/>
 								</option>
 								<inputType id="nvcc.linker.input.1317291371" superClass="nvcc.linker.input">

@@ -7,6 +7,9 @@
 
 #include "event.h"
 
+#define MOUSE "/dev/input/event3"
+#define KEYBOARD "/dev/input/event4"
+
 int fd_mouse = 0;
 int fd_key = 0;
 event* event::instance = NULL;
@@ -30,6 +33,8 @@ int event::openInput(char* dev)
 	do
 	{
 		sprintf(name,"/sys/class/input/event%d/device/name",i);
+		printf("%s\n",name);
+
 		fd = fopen(name, "r");
 		if (fd != NULL)
 		{
@@ -418,6 +423,7 @@ void event::captureMouse()
 	IPC* ipc = IPC::getInstance();
 
 	int par[100] ={0};
+
 	if(fd_mouse < 0 || fd_key < 0)
 	{
 		printf("open failed\n");
