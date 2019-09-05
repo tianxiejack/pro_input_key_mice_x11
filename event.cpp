@@ -7,8 +7,7 @@
 
 #include "event.h"
 
-#define MOUSE "/dev/input/event3"
-#define KEYBOARD "/dev/input/event4"
+#define _GNU_SOURCE
 
 int fd_mouse = 0;
 int fd_key = 0;
@@ -39,7 +38,7 @@ int event::openInput(char* dev)
 		if (fd != NULL)
 		{
 			fgets(name,50,fd);
-			char* p = strstr(name,dev);
+			char* p = strcasestr(name,dev);
 			count = 0;
 			if (p != NULL) return i;
 		}
