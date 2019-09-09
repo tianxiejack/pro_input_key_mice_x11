@@ -7,21 +7,83 @@
 
 #include "event.h"
 
-#define MOUSE "/dev/input/event3"
-#define KEYBOARD "/dev/input/event4"
+#define _GNU_SOURCE
 
 int fd_mouse = 0;
 int fd_key = 0;
+
+int event::m_ckeyboard = 0;
+int event::m_bkey = 0;
+int event::m_dmouse_x = 0;
+int event::m_dmouse_y = 0;
+int event::m_bmouse = 0;
 event* event::instance = NULL;
+
+char *key_name[] ={
+    "left",
+	"middle",
+	"right",
+	"pull_up",
+	"pull_down"
+};
+void* event::openMouse(void* x)
+{
+	Display *display;
+    XEvent xevent;
+	Window window;
+
+	if( (display = XOpenDisplay(NULL)) == NULL )
+        return NULL;
+	window = DefaultRootWindow(display);
+	XAllowEvents(display, AsyncBoth, CurrentTime);
+
+	XGrabPointer(display,window,1,PointerMotionMask | ButtonPressMask | ButtonReleaseMask, GrabModeAsync,GrabModeAsync,None,None,CurrentTime);
+	IPC* ipc = IPC::getInstance();
+
+	int par[100] ={0};
+	while(1)
+	{
+	    XNextEvent(display, &xevent);
+
+		switch (xevent.type)
+		{
+			case MotionNotify:
+				//printf("Mouse move      : [%d, %d]\n", xevent.xmotion.x_root, xevent.xmotion.y_root);
+				m_dmouse_x = xevent.xmotion.x_root;
+				m_dmouse_y = xevent.xmotion.y_root;
+				break;
+			case ButtonPress:
+				//printf("Button pressed  : %s\n", key_name[xevent.xbutton.button - 1]);
+				if (key_name[xevent.xbutton.button-1] == "left")
+					{
+						m_bmouse = 1;
+					}
+				else if (key_name[xevent.xbutton.button-1] == "middle")
+					{
+						m_bmouse = 2;
+					}
+				else if (key_name[xevent.xbutton.button-1] == "right")
+					{
+						m_bmouse = 3;
+					};
+				break;
+			case ButtonRelease:
+				//printf("Button released : %s\n", key_name[xevent.xbutton.button - 1]);
+				break;
+		}
+		par[0] = m_bmouse;
+		par[1] = m_dmouse_x;
+		par[2] = m_dmouse_y;
+
+		ipc->IPCSendMsg(MOUSE_ID,par,12);
+	}
+	return 0;
+}
+
 
 event::event()
 {
 	// TODO Auto-generated constructor stub
-	m_ckeyboard = 0;
-	m_bkey = 0;
-	m_dmouse_x = 0;
-	m_dmouse_y = 0;
-	m_bmouse = 0;
 }
 
 int event::openInput(char* dev)
@@ -39,7 +101,7 @@ int event::openInput(char* dev)
 		if (fd != NULL)
 		{
 			fgets(name,50,fd);
-			char* p = strstr(name,dev);
+			char* p = strcasestr(name,dev);
 			count = 0;
 			if (p != NULL) return i;
 		}
@@ -54,20 +116,12 @@ int event::openInput(char* dev)
 
 void checkInput(int num)
 {
-
 	event* mouse = event::getInstance();
-	int mouseNum = mouse->openInput("Mouse");
-	if (0 == mouseNum) printf("mouse is not be used\n");
 	int keyboardNum = mouse->openInput("Keyboard");
 	if (0 == keyboardNum) printf("keyboard is not be used\n");
 
-	char mouseLocation[30];
 	char keyboardLocation[30];
-
-	sprintf(mouseLocation,"/dev/input/event%d",mouseNum);
 	sprintf(keyboardLocation,"/dev/input/event%d",keyboardNum);
-
-	fd_mouse = open(mouseLocation, O_RDONLY);
 	fd_key = open(keyboardLocation,O_RDONLY);
 
 	alarm(5);
@@ -396,35 +450,22 @@ void event::getKeyboard(int num)
 void event::captureMouse()
 {
 	int retval;
-	struct input_event buf_mouse;
 	struct input_event buf_key;
 	fd_set readfds;
 	struct timeval tv;
 
-	int mouseNum = openInput("Mouse");
-	if (0 == mouseNum) printf("mouse is not be used\n");
 	int keyboardNum = openInput("Keyboard");
 	if (0 == keyboardNum) printf("keyboard is not be used\n");
-
-	char mouseLocation[30];
 	char keyboardLocation[30];
 
-	sprintf(mouseLocation,"/dev/input/event%d",mouseNum);
+
 	sprintf(keyboardLocation,"/dev/input/event%d",keyboardNum);
-
-
-	fd_mouse = open(mouseLocation, O_RDONLY);
 	fd_key = open(keyboardLocation,O_RDONLY);
-
-
-	//fd_mouse = open(MOUSE, O_RDONLY);
-	//fd_key = open(KEYBOARD,O_RDONLY);
-
 	IPC* ipc = IPC::getInstance();
 
 	int par[100] ={0};
 
-	if(fd_mouse < 0 || fd_key < 0)
+	if(fd_mouse < 0)
 	{
 		printf("open failed\n");
 		exit(1);
@@ -436,93 +477,21 @@ void event::captureMouse()
 
 	signal(SIGALRM, checkInput);
 	alarm(5);
+
+
+	pthread_t mouse_open;
+	pthread_create(&mouse_open, NULL,openMouse,NULL);
 	while(1)
 	{
 		tv.tv_sec = 5;
 		tv.tv_usec = 0;
 		FD_ZERO(&readfds);
-		FD_SET(fd_mouse,&readfds);
+		//FD_SET(fd_mouse,&readfds);
 		FD_SET(fd_key,&readfds);
 		retval = select(fd_key+1,&readfds,NULL,NULL,&tv);
 		if (retval == 0)
 		{
 			printf("Time out!\n");
-		}
-		if (FD_ISSET(fd_mouse,&readfds))
-		{
-			if (read(fd_mouse,&buf_mouse,sizeof(struct input_event)) <= 0)
-			{
-				continue;
-			}
-			switch (buf_mouse.type)
-			{
-				case EV_KEY:
-					switch (buf_mouse.code)
-					{
-						case BTN_LEFT:
-						{
-							if (buf_mouse.value == 1)
-							{
-								m_bmouse = 1;
-							}
-							else
-							{
-								m_bmouse = 0;
-							}
-						}
-						break;
-						case BTN_RIGHT:
-						{
-							if (buf_mouse.value == 1)
-							{
-								m_bmouse = 3;
-							}
-							else
-							{
-								m_bmouse = 0;
-							}
-						}
-						break;
-						case BTN_MIDDLE:
-						{
-							if (buf_mouse.value == 1)
-							{
-								m_bmouse = 2;
-							}
-							else
-							{
-								m_bmouse = 0;
-							}
-						}
-						break;
-						default:
-							break;
-					}
-				break;
-				case EV_REL:
-				{
-					switch (buf_mouse.code)
-					{
-						case REL_X:
-							{
-								m_dmouse_x += buf_mouse.value;
-							}
-							break;
-						case REL_Y:
-							{
-								m_dmouse_y += buf_mouse.value;
-							}
-							break;
-					}
-				}
-				break;
-			}
-
-			par[0] = m_bmouse;
-			par[1] = m_dmouse_x;
-			par[2] = m_dmouse_y;
-
-			ipc->IPCSendMsg(MOUSE_ID,par,12);
 		}
 		if (FD_ISSET(fd_key,&readfds))
 		{
@@ -554,4 +523,3 @@ event* event::getInstance()
 	return instance;
 
 }
-
