@@ -30,7 +30,7 @@ int IPC::IPCSendMsg(CMD_ID cmd, void* prm,int len)
 	if(len > 0)
 		memcpy(sendData.param, prm, len);
 
-	ipc_sendmsg(IPC_TOIMG_MSG ,&sendData);
+	ipc_sendmsg(IPC_INPUTEVENT_MSG ,&sendData);
 
 	return 0;
 }
@@ -40,7 +40,7 @@ int IPC::IPCRecvMsg()
 {
 	SENDST recvData;
 	//IPC_PRM_INT *pIn = (IPC_PRM_INT *)&recvData.param;
-	ipc_recvmsg(IPC_TOIMG_MSG,&recvData);
+	ipc_recvmsg(IPC_INPUTEVENT_MSG,&recvData);
 
 	event* mouse = event::getInstance();
 	switch(recvData.cmd_ID)

@@ -26,8 +26,7 @@ typedef enum
 
 typedef enum 
 {
-    IPC_TOIMG_MSG = 0,  		// SERVER TO CLIENT
-    IPC_FRIMG_MSG,
+    IPC_INPUTEVENT_MSG = 0,  		// SERVER TO CLIENT
     IPC_MAX
 }IPC_MTYPE;
 
@@ -51,19 +50,12 @@ static void Ipc_init()
 	char tmp[256] = {"/"};
 	tmpIpc[0].IPCID = IPC_MAX;
 	
-	memcpy(tmpIpc[IPC_TOIMG_MSG].name,tmp,sizeof(tmp));
-	tmpIpc[IPC_TOIMG_MSG].Identify = IPC_TOIMG_MSG;
-	tmpIpc[IPC_TOIMG_MSG].Class = IPC_Class_MSG;
-	tmpIpc[IPC_TOIMG_MSG].IPCID = IPC_MAX;
-	tmpIpc[IPC_TOIMG_MSG].length = 0;
-	tmpIpc[IPC_TOIMG_MSG].ptr = NULL;
-
-	memcpy(tmpIpc[IPC_FRIMG_MSG].name,tmp,sizeof(tmp));
-	tmpIpc[IPC_FRIMG_MSG].Identify = IPC_FRIMG_MSG;
-	tmpIpc[IPC_FRIMG_MSG].Class = IPC_Class_MSG;
-	tmpIpc[IPC_FRIMG_MSG].IPCID = IPC_MAX;
-	tmpIpc[IPC_FRIMG_MSG].length = 0;
-	tmpIpc[IPC_FRIMG_MSG].ptr = NULL;
+	memcpy(tmpIpc[IPC_INPUTEVENT_MSG].name,tmp,sizeof(tmp));
+	tmpIpc[IPC_INPUTEVENT_MSG].Identify = IPC_INPUTEVENT_MSG;
+	tmpIpc[IPC_INPUTEVENT_MSG].Class = IPC_Class_MSG;
+	tmpIpc[IPC_INPUTEVENT_MSG].IPCID = IPC_MAX;
+	tmpIpc[IPC_INPUTEVENT_MSG].length = 0;
+	tmpIpc[IPC_INPUTEVENT_MSG].ptr = NULL;
 
 	return;
 }
