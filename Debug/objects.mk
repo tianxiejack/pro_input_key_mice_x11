@@ -4,5 +4,5 @@
 
 USER_OBJS :=
 
-LIBS := -lipc_c
+LIBS := -lipc_c -lX11
 
